@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Globalization;
 using Random = System.Random;
 
@@ -14,7 +14,7 @@ namespace BreakInfinity
 #if UNITY_2017_1_OR_NEWER
     [Serializable]
 #endif
-    public struct BigDouble : IFormattable, IComparable, IComparable<BigDouble>, IEquatable<BigDouble>
+    public partial struct BigDouble : IFormattable, IComparable, IComparable<BigDouble>, IEquatable<BigDouble>
     {
         public const double Tolerance = 1e-18;
 
@@ -152,9 +152,8 @@ namespace BreakInfinity
             if (value.IndexOf('e') != -1)
             {
                 var parts = value.Split('e');
-                var mantissa = double.Parse(parts[0], CultureInfo.InvariantCulture);
-                var exponent = long.Parse(parts[1], CultureInfo.InvariantCulture);
-                return Normalize(mantissa, exponent);
+                var info = OptimizedDoubleUtils.GetBigValueInfo(value);
+                return Normalize(info.Mantissa, info.Exponent);
             }
 
             if (value == "NaN")
@@ -162,7 +161,7 @@ namespace BreakInfinity
                 return NaN;
             }
 
-            var result = new BigDouble(double.Parse(value, CultureInfo.InvariantCulture));
+            var result = new BigDouble(OptimizedDoubleUtils.ParseDouble(value));
             if (IsNaN(result))
             {
                 throw new Exception("Invalid argument: " + value);
@@ -207,19 +206,9 @@ namespace BreakInfinity
 
         public override string ToString()
         {
-            return BigNumber.FormatBigDouble(this, null, null);
+            return GetUnit();
         }
-
-        public string ToString(string format)
-        {
-            return BigNumber.FormatBigDouble(this, format, null);
-        }
-
-        public string ToString(string format, IFormatProvider formatProvider)
-        {
-            return BigNumber.FormatBigDouble(this, format, formatProvider);
-        }
-
+ 
         public static BigDouble Abs(BigDouble value)
         {
             return FromMantissaExponentNoNormalize(Math.Abs(value.Mantissa), value.Exponent);
@@ -994,7 +983,7 @@ namespace BreakInfinity
                 var index = 0;
                 for (var i = 0; i < Powers.Length; i++)
                 {
-                    Powers[index++] = double.Parse("1e" + (i - IndexOf0), CultureInfo.InvariantCulture);
+                    Powers[index++] = OptimizedDoubleUtils.ParseDouble("1e" + (i - IndexOf0));
                 }
             }
 
