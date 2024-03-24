@@ -15,6 +15,7 @@ public class Tests
             FastBigDouble b = new FastBigDouble("1000");
             FastBigDouble c = new FastBigDouble("1e3");
             Assert.IsTrue(a == b && b == c);
+            a.
         }  
     }
     [Test]
