@@ -1,11 +1,8 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace BreakInfinity
+using System.Collections.Generic; 
+namespace LD
 { 
-    public partial struct BigDouble : IFormattable, IComparable, IComparable<BigDouble>, IEquatable<BigDouble>
+    public partial struct FastBigDouble : IFormattable, IComparable, IComparable<FastBigDouble>, IEquatable<FastBigDouble>
     {
     
         /// <summary>
@@ -108,12 +105,12 @@ namespace BreakInfinity
  
 
  
-        public BigDouble(string value, eFormat format)
+        public FastBigDouble(string value, eFormat format)
         {
             switch (format)
             {
                 case eFormat.Number:
-                    this = BigDouble.Parse(value);
+                    this = FastBigDouble.Parse(value);
                     break;
                 case eFormat.NumberWithAlphabet:
                     var (mantissa, exponent) = SplitAlphabetValue(value);
@@ -121,10 +118,10 @@ namespace BreakInfinity
                     if (mantissa >= 1000d) 
                         throw new Exception("생성자로 알파벳 넘버를 받을 시 가수부는 1000을 초과할 수 없습니다.");
                     else 
-                        this = new BigDouble(mantissa, exponentIndex); 
+                        this = new FastBigDouble(mantissa, exponentIndex); 
                     break;
                 case eFormat.NumberWithExponent:
-                    var split = OptimizedDoubleUtils.GetBigValueInfo(value);
+                    var split = FastDouble.GetBigValueInfo(value);
                     this.exponent = split.Exponent;
                     this.mantissa = split.Mantissa;
                     break;
@@ -134,26 +131,26 @@ namespace BreakInfinity
                     break;
             } 
         }
-        public BigDouble(string value)
+        public FastBigDouble(string value)
         { 
             if (HasAlphabet(value))
             {
-                this = new BigDouble(value, eFormat.NumberWithAlphabet);
+                this = new FastBigDouble(value, eFormat.NumberWithAlphabet);
             }
             else if (value.IndexOf('e') != -1)
             {
-                this = new BigDouble(value, eFormat.NumberWithExponent);
+                this = new FastBigDouble(value, eFormat.NumberWithExponent);
             }
             else
             {
-                this = BigDouble.Parse(value);
+                this = FastBigDouble.Parse(value);
             }
         }
         
-        public BigDouble(double value, string unit)
+        public FastBigDouble(double value, string unit)
         {
-            var exponent = BigDouble.GetExponentFromUnitName(unit);
-            this = new BigDouble(value, exponent);
+            var exponent = FastBigDouble.GetExponentFromUnitName(unit);
+            this = new FastBigDouble(value, exponent);
         } 
     }
 }

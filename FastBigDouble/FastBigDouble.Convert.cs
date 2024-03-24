@@ -1,20 +1,16 @@
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Numerics;
-using System.Text; 
-using Random = System.Random;
+using System; 
+using System.Text;  
 
 // I'm not sure if there's a "Yes, this is Unity" define symbol
 // (#if UNITY doesn't seem to work). If you happen to know one - please create
-// an issue here https://github.com/Razenpok/BreakInfinity.cs/issues.
+// an issue here https://github.com/Razenpok/FastBigDouble.cs/issues.
 #if UNITY_2017_1_OR_NEWER
 using UnityEngine;
 #endif
 
-namespace BreakInfinity
+namespace LD
 { 
-    public partial struct BigDouble : IFormattable, IComparable, IComparable<BigDouble>, IEquatable<BigDouble>
+    public partial struct FastBigDouble : IFormattable, IComparable, IComparable<FastBigDouble>, IEquatable<FastBigDouble>
     {
         private static StringBuilder unitSb = new StringBuilder(); 
         private static StringBuilder alphaUnitSb = new StringBuilder(); 

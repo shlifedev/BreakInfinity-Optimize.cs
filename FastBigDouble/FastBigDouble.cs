@@ -1,20 +1,16 @@
 using System;
 using System.Globalization;
-using Random = System.Random;
-
-// I'm not sure if there's a "Yes, this is Unity" define symbol
-// (#if UNITY doesn't seem to work). If you happen to know one - please create
-// an issue here https://github.com/Razenpok/BreakInfinity.cs/issues.
+using Random = System.Random; 
 #if UNITY_2017_1_OR_NEWER
 using UnityEngine;
 #endif
 
-namespace BreakInfinity
+namespace LD
 {
 #if UNITY_2017_1_OR_NEWER
     [Serializable]
 #endif
-    public partial struct BigDouble : IFormattable, IComparable, IComparable<BigDouble>, IEquatable<BigDouble>
+    public partial struct FastBigDouble : IFormattable, IComparable, IComparable<FastBigDouble>, IEquatable<FastBigDouble>
     {
         public const double Tolerance = 1e-18;
 
@@ -41,24 +37,24 @@ namespace BreakInfinity
 
         // This constructor is used to prevent non-normalized values to be created via constructor.
         // ReSharper disable once UnusedParameter.Local
-        private BigDouble(double mantissa, long exponent, PrivateConstructorArg _)
+        private FastBigDouble(double mantissa, long exponent, PrivateConstructorArg _)
         {
             this.mantissa = mantissa;
             this.exponent = exponent;
         }
 
-        public BigDouble(double mantissa, long exponent)
+        public FastBigDouble(double mantissa, long exponent)
         {
             this = Normalize(mantissa, exponent);
         }
 
-        public BigDouble(BigDouble other)
+        public FastBigDouble(FastBigDouble other)
         {
             mantissa = other.mantissa;
             exponent = other.exponent;
         }
 
-        public BigDouble(double value)
+        public FastBigDouble(double value)
         {
             //SAFETY: Handle Infinity and NaN in a somewhat meaningful way.
             if (double.IsNaN(value))
@@ -83,7 +79,7 @@ namespace BreakInfinity
             }
         }
 
-        public static BigDouble Normalize(double mantissa, long exponent)
+        public static FastBigDouble Normalize(double mantissa, long exponent)
         {
             if (mantissa >= 1 && mantissa < 10 || !IsFinite(mantissa))
             {
@@ -112,47 +108,47 @@ namespace BreakInfinity
 
         public long Exponent => exponent;
 
-        public static BigDouble FromMantissaExponentNoNormalize(double mantissa, long exponent)
+        public static FastBigDouble FromMantissaExponentNoNormalize(double mantissa, long exponent)
         {
-            return new BigDouble(mantissa, exponent, new PrivateConstructorArg());
+            return new FastBigDouble(mantissa, exponent, new PrivateConstructorArg());
         }
 
-        public static BigDouble Zero = FromMantissaExponentNoNormalize(0, 0);
+        public static FastBigDouble Zero = FromMantissaExponentNoNormalize(0, 0);
 
-        public static BigDouble One = FromMantissaExponentNoNormalize(1, 0);
+        public static FastBigDouble One = FromMantissaExponentNoNormalize(1, 0);
 
-        public static BigDouble NaN = FromMantissaExponentNoNormalize(double.NaN, long.MinValue);
+        public static FastBigDouble NaN = FromMantissaExponentNoNormalize(double.NaN, long.MinValue);
 
-        public static bool IsNaN(BigDouble value)
+        public static bool IsNaN(FastBigDouble value)
         {
             return double.IsNaN(value.Mantissa);
         }
 
-        public static BigDouble PositiveInfinity = FromMantissaExponentNoNormalize(double.PositiveInfinity, 0);
+        public static FastBigDouble PositiveInfinity = FromMantissaExponentNoNormalize(double.PositiveInfinity, 0);
 
-        public static bool IsPositiveInfinity(BigDouble value)
+        public static bool IsPositiveInfinity(FastBigDouble value)
         {
             return double.IsPositiveInfinity(value.Mantissa);
         }
 
-        public static BigDouble NegativeInfinity = FromMantissaExponentNoNormalize(double.NegativeInfinity, 0);
+        public static FastBigDouble NegativeInfinity = FromMantissaExponentNoNormalize(double.NegativeInfinity, 0);
 
-        public static bool IsNegativeInfinity(BigDouble value)
+        public static bool IsNegativeInfinity(FastBigDouble value)
         {
             return double.IsNegativeInfinity(value.Mantissa);
         }
 
-        public static bool IsInfinity(BigDouble value)
+        public static bool IsInfinity(FastBigDouble value)
         {
             return double.IsInfinity(value.Mantissa);
         }
 
-        public static BigDouble Parse(string value)
+        public static FastBigDouble Parse(string value)
         {
             if (value.IndexOf('e') != -1)
             {
                 var parts = value.Split('e');
-                var info = OptimizedDoubleUtils.GetBigValueInfo(value);
+                var info = FastDouble.GetBigValueInfo(value);
                 return Normalize(info.Mantissa, info.Exponent);
             }
 
@@ -161,7 +157,7 @@ namespace BreakInfinity
                 return NaN;
             }
 
-            var result = new BigDouble(OptimizedDoubleUtils.ParseDouble(value));
+            var result = new FastBigDouble(FastDouble.ParseDouble(value));
             if (IsNaN(result))
             {
                 throw new Exception("Invalid argument: " + value);
@@ -209,22 +205,22 @@ namespace BreakInfinity
             return GetUnit();
         }
  
-        public static BigDouble Abs(BigDouble value)
+        public static FastBigDouble Abs(FastBigDouble value)
         {
             return FromMantissaExponentNoNormalize(Math.Abs(value.Mantissa), value.Exponent);
         }
 
-        public static BigDouble Negate(BigDouble value)
+        public static FastBigDouble Negate(FastBigDouble value)
         {
             return FromMantissaExponentNoNormalize(-value.Mantissa, value.Exponent);
         }
 
-        public static int Sign(BigDouble value)
+        public static int Sign(FastBigDouble value)
         {
             return Math.Sign(value.Mantissa);
         }
 
-        public static BigDouble Round(BigDouble value)
+        public static FastBigDouble Round(FastBigDouble value)
         {
             if (IsNaN(value))
             {
@@ -238,13 +234,13 @@ namespace BreakInfinity
 
             if (value.Exponent < MaxSignificantDigits)
             {
-                return new BigDouble(Math.Round(value.ToDouble()));
+                return new FastBigDouble(Math.Round(value.ToDouble()));
             }
 
             return value;
         }
 
-        public static BigDouble Round(BigDouble value, MidpointRounding mode)
+        public static FastBigDouble Round(FastBigDouble value, MidpointRounding mode)
         {
             if (IsNaN(value))
             {
@@ -258,13 +254,13 @@ namespace BreakInfinity
 
             if (value.Exponent < MaxSignificantDigits)
             {
-                return new BigDouble(Math.Round(value.ToDouble(), mode));
+                return new FastBigDouble(Math.Round(value.ToDouble(), mode));
             }
 
             return value;
         }
 
-        public static BigDouble Floor(BigDouble value)
+        public static FastBigDouble Floor(FastBigDouble value)
         {
             if (IsNaN(value))
             {
@@ -278,13 +274,13 @@ namespace BreakInfinity
 
             if (value.Exponent < MaxSignificantDigits)
             {
-                return new BigDouble(Math.Floor(value.ToDouble()));
+                return new FastBigDouble(Math.Floor(value.ToDouble()));
             }
 
             return value;
         }
 
-        public static BigDouble Ceiling(BigDouble value)
+        public static FastBigDouble Ceiling(FastBigDouble value)
         {
             if (IsNaN(value))
             {
@@ -298,13 +294,13 @@ namespace BreakInfinity
 
             if (value.Exponent < MaxSignificantDigits)
             {
-                return new BigDouble(Math.Ceiling(value.ToDouble()));
+                return new FastBigDouble(Math.Ceiling(value.ToDouble()));
             }
 
             return value;
         }
 
-        public static BigDouble Truncate(BigDouble value)
+        public static FastBigDouble Truncate(FastBigDouble value)
         {
             if (IsNaN(value))
             {
@@ -318,13 +314,13 @@ namespace BreakInfinity
 
             if (value.Exponent < MaxSignificantDigits)
             {
-                return new BigDouble(Math.Truncate(value.ToDouble()));
+                return new FastBigDouble(Math.Truncate(value.ToDouble()));
             }
 
             return value;
         }
 
-        public static BigDouble Add(BigDouble left, BigDouble right)
+        public static FastBigDouble Add(FastBigDouble left, FastBigDouble right)
         {
             //figure out which is bigger, shrink the mantissa of the smaller by the difference in exponents, add mantissas, normalize and return
 
@@ -346,7 +342,7 @@ namespace BreakInfinity
                 return left.Mantissa + right.Mantissa;
             }
 
-            BigDouble bigger, smaller;
+            FastBigDouble bigger, smaller;
             if (left.Exponent >= right.Exponent)
             {
                 bigger = left;
@@ -371,78 +367,78 @@ namespace BreakInfinity
                 bigger.Exponent - 14);
         }
 
-        public static BigDouble Subtract(BigDouble left, BigDouble right)
+        public static FastBigDouble Subtract(FastBigDouble left, FastBigDouble right)
         {
             return left + -right;
         }
 
-        public static BigDouble Multiply(BigDouble left, BigDouble right)
+        public static FastBigDouble Multiply(FastBigDouble left, FastBigDouble right)
         {
             // 2e3 * 4e5 = (2 * 4)e(3 + 5)
             return Normalize(left.Mantissa * right.Mantissa, left.Exponent + right.Exponent);
         }
 
-        public static BigDouble Divide(BigDouble left, BigDouble right)
+        public static FastBigDouble Divide(FastBigDouble left, FastBigDouble right)
         {
             return left * Reciprocate(right);
         }
 
-        public static BigDouble Reciprocate(BigDouble value)
+        public static FastBigDouble Reciprocate(FastBigDouble value)
         {
             return Normalize(1.0 / value.Mantissa, -value.Exponent);
         }
 
-        public static implicit operator BigDouble(double value)
+        public static implicit operator FastBigDouble(double value)
         {
-            return new BigDouble(value);
+            return new FastBigDouble(value);
         }
 
-        public static implicit operator BigDouble(int value)
+        public static implicit operator FastBigDouble(int value)
         {
-            return new BigDouble(value);
+            return new FastBigDouble(value);
         }
 
-        public static implicit operator BigDouble(long value)
+        public static implicit operator FastBigDouble(long value)
         {
-            return new BigDouble(value);
+            return new FastBigDouble(value);
         }
 
-        public static implicit operator BigDouble(float value)
+        public static implicit operator FastBigDouble(float value)
         {
-            return new BigDouble(value);
+            return new FastBigDouble(value);
         }
 
-        public static BigDouble operator -(BigDouble value)
+        public static FastBigDouble operator -(FastBigDouble value)
         {
             return Negate(value);
         }
 
-        public static BigDouble operator +(BigDouble left, BigDouble right)
+        public static FastBigDouble operator +(FastBigDouble left, FastBigDouble right)
         {
             return Add(left, right);
         }
 
-        public static BigDouble operator -(BigDouble left, BigDouble right)
+        public static FastBigDouble operator -(FastBigDouble left, FastBigDouble right)
         {
             return Subtract(left, right);
         }
 
-        public static BigDouble operator *(BigDouble left, BigDouble right)
+        public static FastBigDouble operator *(FastBigDouble left, FastBigDouble right)
         {
             return Multiply(left, right);
         }
 
-        public static BigDouble operator /(BigDouble left, BigDouble right)
+        public static FastBigDouble operator /(FastBigDouble left, FastBigDouble right)
         {
             return Divide(left, right);
         }
 
-        public static BigDouble operator ++(BigDouble value)
+        public static FastBigDouble operator ++(FastBigDouble value)
         {
             return value.Add(1);
         }
 
-        public static BigDouble operator --(BigDouble value)
+        public static FastBigDouble operator --(FastBigDouble value)
         {
             return value.Subtract(1);
         }
@@ -453,14 +449,14 @@ namespace BreakInfinity
             {
                 return 1;
             }
-            if (other is BigDouble)
+            if (other is FastBigDouble)
             {
-                return CompareTo((BigDouble) other);
+                return CompareTo((FastBigDouble) other);
             }
             throw new ArgumentException("The parameter must be a BigDouble.");
         }
 
-        public int CompareTo(BigDouble other)
+        public int CompareTo(FastBigDouble other)
         {
             if (
                 IsZero(Mantissa) || IsZero(other.Mantissa)
@@ -487,7 +483,7 @@ namespace BreakInfinity
 
         public override bool Equals(object other)
         {
-            return other is BigDouble && Equals((BigDouble)other);
+            return other is FastBigDouble && Equals((FastBigDouble)other);
         }
 
         public override int GetHashCode()
@@ -498,7 +494,7 @@ namespace BreakInfinity
             }
         }
 
-        public bool Equals(BigDouble other)
+        public bool Equals(FastBigDouble other)
         {
             return !IsNaN(this) && !IsNaN(other) && (AreSameInfinity(this, other)
                 || Exponent == other.Exponent && AreEqual(Mantissa, other.Mantissa));
@@ -511,29 +507,29 @@ namespace BreakInfinity
         /// than (larger number) * 1e-9 will be considered equal.
         /// </para>
         /// </summary>
-        public bool Equals(BigDouble other, double tolerance)
+        public bool Equals(FastBigDouble other, double tolerance)
         {
             return !IsNaN(this) && !IsNaN(other) && (AreSameInfinity(this, other)
                 || Abs(this - other) <= Max(Abs(this), Abs(other)) * tolerance);
         }
 
-        private static bool AreSameInfinity(BigDouble first, BigDouble second)
+        private static bool AreSameInfinity(FastBigDouble first, FastBigDouble second)
         {
             return IsPositiveInfinity(first) && IsPositiveInfinity(second)
                 || IsNegativeInfinity(first) && IsNegativeInfinity(second);
         }
 
-        public static bool operator ==(BigDouble left, BigDouble right)
+        public static bool operator ==(FastBigDouble left, FastBigDouble right)
         {
             return left.Equals(right);
         }
 
-        public static bool operator !=(BigDouble left, BigDouble right)
+        public static bool operator !=(FastBigDouble left, FastBigDouble right)
         {
             return !(left == right);
         }
 
-        public static bool operator <(BigDouble a, BigDouble b)
+        public static bool operator <(FastBigDouble a, FastBigDouble b)
         {
             if (IsNaN(a) || IsNaN(b))
             {
@@ -546,7 +542,7 @@ namespace BreakInfinity
             return b.Mantissa > 0 || a.Exponent > b.Exponent;
         }
 
-        public static bool operator <=(BigDouble a, BigDouble b)
+        public static bool operator <=(FastBigDouble a, FastBigDouble b)
         {
             if (IsNaN(a) || IsNaN(b))
             {
@@ -556,7 +552,7 @@ namespace BreakInfinity
             return !(a > b);
         }
 
-        public static bool operator >(BigDouble a, BigDouble b)
+        public static bool operator >(FastBigDouble a, FastBigDouble b)
         {
             if (IsNaN(a) || IsNaN(b))
             {
@@ -569,7 +565,7 @@ namespace BreakInfinity
             return b.Mantissa < 0 && a.Exponent < b.Exponent;
         }
 
-        public static bool operator >=(BigDouble a, BigDouble b)
+        public static bool operator >=(FastBigDouble a, FastBigDouble b)
         {
             if (IsNaN(a) || IsNaN(b))
             {
@@ -579,7 +575,7 @@ namespace BreakInfinity
             return !(a < b);
         }
 
-        public static BigDouble Max(BigDouble left, BigDouble right)
+        public static FastBigDouble Max(FastBigDouble left, FastBigDouble right)
         {
             if (IsNaN(left) || IsNaN(right))
             {
@@ -588,7 +584,7 @@ namespace BreakInfinity
             return left > right ? left : right;
         }
 
-        public static BigDouble Min(BigDouble left, BigDouble right)
+        public static FastBigDouble Min(FastBigDouble left, FastBigDouble right)
         {
             if (IsNaN(left) || IsNaN(right))
             {
@@ -597,22 +593,22 @@ namespace BreakInfinity
             return left > right ? right : left;
         }
 
-        public static double AbsLog10(BigDouble value)
+        public static double AbsLog10(FastBigDouble value)
         {
             return value.Exponent + Math.Log10(Math.Abs(value.Mantissa));
         }
 
-        public static double Log10(BigDouble value)
+        public static double Log10(FastBigDouble value)
         {
             return value.Exponent + Math.Log10(value.Mantissa);
         }
 
-        public static double Log(BigDouble value, BigDouble @base)
+        public static double Log(FastBigDouble value, FastBigDouble @base)
         {
             return Log(value, @base.ToDouble());
         }
 
-        public static double Log(BigDouble value, double @base)
+        public static double Log(FastBigDouble value, double @base)
         {
             if (IsZero(@base))
             {
@@ -623,34 +619,34 @@ namespace BreakInfinity
             return 2.30258509299404568402 / Math.Log(@base) * Log10(value);
         }
 
-        public static double Log2(BigDouble value)
+        public static double Log2(FastBigDouble value)
         {
             return 3.32192809488736234787 * Log10(value);
         }
 
-        public static double Ln(BigDouble value)
+        public static double Ln(FastBigDouble value)
         {
             return 2.30258509299404568402 * Log10(value);
         }
 
-        public static BigDouble Pow10(double power)
+        public static FastBigDouble Pow10(double power)
         {
             return IsInteger(power)
                 ? Pow10((long) power)
                 : Normalize(Math.Pow(10, power % 1), (long) Math.Truncate(power));
         }
 
-        public static BigDouble Pow10(long power)
+        public static FastBigDouble Pow10(long power)
         {
             return FromMantissaExponentNoNormalize(1, power);
         }
 
-        public static BigDouble Pow(BigDouble value, BigDouble power)
+        public static FastBigDouble Pow(FastBigDouble value, FastBigDouble power)
         {
             return Pow(value, power.ToDouble());
         }
 
-        public static BigDouble Pow(BigDouble value, long power)
+        public static FastBigDouble Pow(FastBigDouble value, long power)
         {
             if (Is10(value))
             {
@@ -668,7 +664,7 @@ namespace BreakInfinity
             return Normalize(mantissa, value.Exponent * power);
         }
 
-        public static BigDouble Pow(BigDouble value, double power)
+        public static FastBigDouble Pow(FastBigDouble value, double power)
         {
             // TODO: power can be greater that long.MaxValue, which can bring troubles in fast track
             var powerIsInteger = IsInteger(power);
@@ -679,12 +675,12 @@ namespace BreakInfinity
             return Is10(value) && powerIsInteger ? Pow10(power) : PowInternal(value, power);
         }
 
-        private static bool Is10(BigDouble value)
+        private static bool Is10(FastBigDouble value)
         {
             return value.Exponent == 1 && value.Mantissa - 1 < double.Epsilon;
         }
 
-        private static BigDouble PowInternal(BigDouble value, double other)
+        private static FastBigDouble PowInternal(FastBigDouble value, double other)
         {
             //UN-SAFETY: Accuracy not guaranteed beyond ~9~11 decimal places.
 
@@ -722,7 +718,7 @@ namespace BreakInfinity
             return result;
         }
 
-        public static BigDouble Factorial(BigDouble value)
+        public static FastBigDouble Factorial(FastBigDouble value)
         {
             //Using Stirling's Approximation. https://en.wikipedia.org/wiki/Stirling%27s_approximation#Versions_suitable_for_calculators
 
@@ -731,16 +727,16 @@ namespace BreakInfinity
             return Pow(n / 2.71828182845904523536 * Math.Sqrt(n * Math.Sinh(1 / n) + 1 / (810 * Math.Pow(n, 6))), n) * Math.Sqrt(2 * 3.141592653589793238462 / n);
         }
 
-        public static BigDouble Exp(BigDouble value)
+        public static FastBigDouble Exp(FastBigDouble value)
         {
             return Pow(2.71828182845904523536, value);
         }
 
-        public static BigDouble Sqrt(BigDouble value)
+        public static FastBigDouble Sqrt(FastBigDouble value)
         {
             if (value.Mantissa < 0)
             {
-                return new BigDouble(double.NaN);
+                return new FastBigDouble(double.NaN);
             }
 
             if (value.Exponent % 2 != 0)
@@ -752,7 +748,7 @@ namespace BreakInfinity
             return Normalize(Math.Sqrt(value.Mantissa), (long) Math.Floor(value.Exponent / 2.0));
         }
 
-        public static BigDouble Cbrt(BigDouble value)
+        public static FastBigDouble Cbrt(FastBigDouble value)
         {
             var sign = 1;
             var mantissa = value.Mantissa;
@@ -778,32 +774,32 @@ namespace BreakInfinity
             return Normalize(newmantissa, (long) Math.Floor(value.Exponent / 3.0));
         }
 
-        public static BigDouble Sinh(BigDouble value)
+        public static FastBigDouble Sinh(FastBigDouble value)
         {
             return (Exp(value) - Exp(-value)) / 2;
         }
 
-        public static BigDouble Cosh(BigDouble value)
+        public static FastBigDouble Cosh(FastBigDouble value)
         {
             return (Exp(value) + Exp(-value)) / 2;
         }
 
-        public static BigDouble Tanh(BigDouble value)
+        public static FastBigDouble Tanh(FastBigDouble value)
         {
             return Sinh(value) / Cosh(value);
         }
 
-        public static double Asinh(BigDouble value)
+        public static double Asinh(FastBigDouble value)
         {
             return Ln(value + Sqrt(Pow(value, 2) + 1));
         }
 
-        public static double Acosh(BigDouble value)
+        public static double Acosh(FastBigDouble value)
         {
             return Ln(value + Sqrt(Pow(value, 2) - 1));
         }
 
-        public static double Atanh(BigDouble value)
+        public static double Atanh(FastBigDouble value)
         {
             if (Abs(value) >= 1) return double.NaN;
             return Ln((value + 1) / (One - value)) / 2;
@@ -834,7 +830,7 @@ namespace BreakInfinity
         /// </summary>
         private static class BigNumber
         {
-            public static string FormatBigDouble(BigDouble value, string format, IFormatProvider formatProvider)
+            public static string FormatBigDouble(FastBigDouble value, string format, IFormatProvider formatProvider)
             {
                 if (IsNaN(value)) return "NaN";
                 if (value.Exponent >= ExpLimit)
@@ -896,7 +892,7 @@ namespace BreakInfinity
                 return ch;
             }
 
-            private static string FormatGeneral(BigDouble value, int places)
+            private static string FormatGeneral(FastBigDouble value, int places)
             {
                 if (value.Exponent <= -ExpLimit || IsZero(value.Mantissa))
                 {
@@ -919,7 +915,7 @@ namespace BreakInfinity
                 return value.ToString($"F{places}", CultureInfo.InvariantCulture);
             }
 
-            private static string FormatExponential(BigDouble value, int places)
+            private static string FormatExponential(FastBigDouble value, int places)
             {
                 if (value.Exponent <= -ExpLimit || IsZero(value.Mantissa))
                 {
@@ -939,7 +935,7 @@ namespace BreakInfinity
                        + value.Exponent;
             }
 
-            private static string FormatFixed(BigDouble value, int places)
+            private static string FormatFixed(FastBigDouble value, int places)
             {
                 if (places < 0)
                 {
@@ -983,7 +979,7 @@ namespace BreakInfinity
                 var index = 0;
                 for (var i = 0; i < Powers.Length; i++)
                 {
-                    Powers[index++] = OptimizedDoubleUtils.ParseDouble("1e" + (i - IndexOf0));
+                    Powers[index++] = FastDouble.ParseDouble("1e" + (i - IndexOf0));
                 }
             }
 
@@ -1005,11 +1001,11 @@ namespace BreakInfinity
         /// <para>5% of the time, mantissa is 0.</para>
         /// <para>10% of the time, mantissa is round.</para>
         /// </summary>
-        public static BigDouble RandomBigDouble(double absMaxExponent)
+        public static FastBigDouble RandomBigDouble(double absMaxExponent)
         {
             if (Random.NextDouble() * 20 < 1)
             {
-                return BigDouble.Normalize(0, 0);
+                return FastBigDouble.Normalize(0, 0);
             }
 
             var mantissa = Random.NextDouble() * 10;
@@ -1020,7 +1016,7 @@ namespace BreakInfinity
 
             mantissa *= Math.Sign(Random.NextDouble() * 2 - 1);
             var exponent = (long)(Math.Floor(Random.NextDouble() * absMaxExponent * 2) - absMaxExponent);
-            return BigDouble.Normalize(mantissa, exponent);
+            return FastBigDouble.Normalize(mantissa, exponent);
         }
 
         /// <summary>
@@ -1031,26 +1027,26 @@ namespace BreakInfinity
         /// Adapted from Trimps source code.
         /// </para>
         /// </summary>
-        public static BigDouble AffordGeometricSeries(BigDouble resourcesAvailable, BigDouble priceStart,
-            BigDouble priceRatio, BigDouble currentOwned)
+        public static FastBigDouble AffordGeometricSeries(FastBigDouble resourcesAvailable, FastBigDouble priceStart,
+            FastBigDouble priceRatio, FastBigDouble currentOwned)
         {
-            var actualStart = priceStart * BigDouble.Pow(priceRatio, currentOwned);
+            var actualStart = priceStart * FastBigDouble.Pow(priceRatio, currentOwned);
 
             //return Math.floor(log10(((resourcesAvailable / (priceStart * Math.pow(priceRatio, currentOwned))) * (priceRatio - 1)) + 1) / log10(priceRatio));
 
-            return BigDouble.Floor(BigDouble.Log10(resourcesAvailable / actualStart * (priceRatio - 1) + 1) / BigDouble.Log10(priceRatio));
+            return FastBigDouble.Floor(FastBigDouble.Log10(resourcesAvailable / actualStart * (priceRatio - 1) + 1) / FastBigDouble.Log10(priceRatio));
         }
 
         /// <summary>
         /// How much resource would it cost to buy (numItems) items if you already have currentOwned,
         /// the initial price is priceStart and it multiplies by priceRatio each purchase?
         /// </summary>
-        public static BigDouble SumGeometricSeries(BigDouble numItems, BigDouble priceStart, BigDouble priceRatio,
-            BigDouble currentOwned)
+        public static FastBigDouble SumGeometricSeries(FastBigDouble numItems, FastBigDouble priceStart, FastBigDouble priceRatio,
+            FastBigDouble currentOwned)
         {
-            var actualStart = priceStart * BigDouble.Pow(priceRatio, currentOwned);
+            var actualStart = priceStart * FastBigDouble.Pow(priceRatio, currentOwned);
 
-            return actualStart * (1 - BigDouble.Pow(priceRatio, numItems)) / (1 - priceRatio);
+            return actualStart * (1 - FastBigDouble.Pow(priceRatio, numItems)) / (1 - priceRatio);
         }
 
         /// <summary>
@@ -1058,8 +1054,8 @@ namespace BreakInfinity
         /// additively increasing cost each purchase (start at priceStart, add by priceAdd,
         /// already own currentOwned), how much of it can you buy?
         /// </summary>
-        public static BigDouble AffordArithmeticSeries(BigDouble resourcesAvailable, BigDouble priceStart,
-            BigDouble priceAdd, BigDouble currentOwned)
+        public static FastBigDouble AffordArithmeticSeries(FastBigDouble resourcesAvailable, FastBigDouble priceStart,
+            FastBigDouble priceAdd, FastBigDouble currentOwned)
         {
             var actualStart = priceStart + currentOwned * priceAdd;
 
@@ -1068,10 +1064,10 @@ namespace BreakInfinity
             //then floor it and you're done!
 
             var b = actualStart - priceAdd / 2;
-            var b2 = BigDouble.Pow(b, 2);
+            var b2 = FastBigDouble.Pow(b, 2);
 
-            return BigDouble.Floor(
-                (BigDouble.Sqrt(b2 + priceAdd * resourcesAvailable * 2) - b) / priceAdd
+            return FastBigDouble.Floor(
+                (FastBigDouble.Sqrt(b2 + priceAdd * resourcesAvailable * 2) - b) / priceAdd
             );
         }
 
@@ -1082,8 +1078,8 @@ namespace BreakInfinity
         /// Adapted from http://www.mathwords.com/a/arithmetic_series.htm
         /// </para>
         /// </summary>
-        public static BigDouble SumArithmeticSeries(BigDouble numItems, BigDouble priceStart, BigDouble priceAdd,
-            BigDouble currentOwned)
+        public static FastBigDouble SumArithmeticSeries(FastBigDouble numItems, FastBigDouble priceStart, FastBigDouble priceAdd,
+            FastBigDouble currentOwned)
         {
             var actualStart = priceStart + currentOwned * priceAdd;
 
@@ -1099,7 +1095,7 @@ namespace BreakInfinity
         /// From Frozen Cookies: http://cookieclicker.wikia.com/wiki/Frozen_Cookies_(JavaScript_Add-on)#Efficiency.3F_What.27s_that.3F
         /// </para>
         /// </summary>
-        public static BigDouble EfficiencyOfPurchase(BigDouble cost, BigDouble currentRpS, BigDouble deltaRpS)
+        public static FastBigDouble EfficiencyOfPurchase(FastBigDouble cost, FastBigDouble currentRpS, FastBigDouble deltaRpS)
         {
             return cost / currentRpS + cost / deltaRpS;
         }
@@ -1107,174 +1103,174 @@ namespace BreakInfinity
 
     public static class BigDoubleExtensions
     {
-        public static BigDouble Abs(this BigDouble value)
+        public static FastBigDouble Abs(this FastBigDouble value)
         {
-            return BigDouble.Abs(value);
+            return FastBigDouble.Abs(value);
         }
 
-        public static BigDouble Negate(this BigDouble value)
+        public static FastBigDouble Negate(this FastBigDouble value)
         {
-            return BigDouble.Negate(value);
+            return FastBigDouble.Negate(value);
         }
 
-        public static int Sign(this BigDouble value)
+        public static int Sign(this FastBigDouble value)
         {
-            return BigDouble.Sign(value);
+            return FastBigDouble.Sign(value);
         }
 
-        public static BigDouble Round(this BigDouble value)
+        public static FastBigDouble Round(this FastBigDouble value)
         {
-            return BigDouble.Round(value);
+            return FastBigDouble.Round(value);
         }
 
-        public static BigDouble Floor(this BigDouble value)
+        public static FastBigDouble Floor(this FastBigDouble value)
         {
-            return BigDouble.Floor(value);
+            return FastBigDouble.Floor(value);
         }
 
-        public static BigDouble Ceiling(this BigDouble value)
+        public static FastBigDouble Ceiling(this FastBigDouble value)
         {
-            return BigDouble.Ceiling(value);
+            return FastBigDouble.Ceiling(value);
         }
 
-        public static BigDouble Truncate(this BigDouble value)
+        public static FastBigDouble Truncate(this FastBigDouble value)
         {
-            return BigDouble.Truncate(value);
+            return FastBigDouble.Truncate(value);
         }
 
-        public static BigDouble Add(this BigDouble value, BigDouble other)
+        public static FastBigDouble Add(this FastBigDouble value, FastBigDouble other)
         {
-            return BigDouble.Add(value, other);
+            return FastBigDouble.Add(value, other);
         }
 
-        public static BigDouble Subtract(this BigDouble value, BigDouble other)
+        public static FastBigDouble Subtract(this FastBigDouble value, FastBigDouble other)
         {
-            return BigDouble.Subtract(value, other);
+            return FastBigDouble.Subtract(value, other);
         }
 
-        public static BigDouble Multiply(this BigDouble value, BigDouble other)
+        public static FastBigDouble Multiply(this FastBigDouble value, FastBigDouble other)
         {
-            return BigDouble.Multiply(value, other);
+            return FastBigDouble.Multiply(value, other);
         }
 
-        public static BigDouble Divide(this BigDouble value, BigDouble other)
+        public static FastBigDouble Divide(this FastBigDouble value, FastBigDouble other)
         {
-            return BigDouble.Divide(value, other);
+            return FastBigDouble.Divide(value, other);
         }
 
-        public static BigDouble Reciprocate(this BigDouble value)
+        public static FastBigDouble Reciprocate(this FastBigDouble value)
         {
-            return BigDouble.Reciprocate(value);
+            return FastBigDouble.Reciprocate(value);
         }
 
-        public static BigDouble Max(this BigDouble value, BigDouble other)
+        public static FastBigDouble Max(this FastBigDouble value, FastBigDouble other)
         {
-            return BigDouble.Max(value, other);
+            return FastBigDouble.Max(value, other);
         }
 
-        public static BigDouble Min(this BigDouble value, BigDouble other)
+        public static FastBigDouble Min(this FastBigDouble value, FastBigDouble other)
         {
-            return BigDouble.Min(value, other);
+            return FastBigDouble.Min(value, other);
         }
 
-        public static double AbsLog10(this BigDouble value)
+        public static double AbsLog10(this FastBigDouble value)
         {
-            return BigDouble.AbsLog10(value);
+            return FastBigDouble.AbsLog10(value);
         }
 
-        public static double Log10(this BigDouble value)
+        public static double Log10(this FastBigDouble value)
         {
-            return BigDouble.Log10(value);
+            return FastBigDouble.Log10(value);
         }
 
-        public static double Log(BigDouble value, BigDouble @base)
+        public static double Log(FastBigDouble value, FastBigDouble @base)
         {
-            return BigDouble.Log(value, @base);
+            return FastBigDouble.Log(value, @base);
         }
 
-        public static double Log(this BigDouble value, double @base)
+        public static double Log(this FastBigDouble value, double @base)
         {
-            return BigDouble.Log(value, @base);
+            return FastBigDouble.Log(value, @base);
         }
 
-        public static double Log2(this BigDouble value)
+        public static double Log2(this FastBigDouble value)
         {
-            return BigDouble.Log2(value);
+            return FastBigDouble.Log2(value);
         }
 
-        public static double Ln(this BigDouble value)
+        public static double Ln(this FastBigDouble value)
         {
-            return BigDouble.Ln(value);
+            return FastBigDouble.Ln(value);
         }
 
-        public static BigDouble Exp(this BigDouble value)
+        public static FastBigDouble Exp(this FastBigDouble value)
         {
-            return BigDouble.Exp(value);
+            return FastBigDouble.Exp(value);
         }
 
-        public static BigDouble Sinh(this BigDouble value)
+        public static FastBigDouble Sinh(this FastBigDouble value)
         {
-            return BigDouble.Sinh(value);
+            return FastBigDouble.Sinh(value);
         }
 
-        public static BigDouble Cosh(this BigDouble value)
+        public static FastBigDouble Cosh(this FastBigDouble value)
         {
-            return BigDouble.Cosh(value);
+            return FastBigDouble.Cosh(value);
         }
 
-        public static BigDouble Tanh(this BigDouble value)
+        public static FastBigDouble Tanh(this FastBigDouble value)
         {
-            return BigDouble.Tanh(value);
+            return FastBigDouble.Tanh(value);
         }
 
-        public static double Asinh(this BigDouble value)
+        public static double Asinh(this FastBigDouble value)
         {
-            return BigDouble.Asinh(value);
+            return FastBigDouble.Asinh(value);
         }
 
-        public static double Acosh(this BigDouble value)
+        public static double Acosh(this FastBigDouble value)
         {
-            return BigDouble.Acosh(value);
+            return FastBigDouble.Acosh(value);
         }
 
-        public static double Atanh(this BigDouble value)
+        public static double Atanh(this FastBigDouble value)
         {
-            return BigDouble.Atanh(value);
+            return FastBigDouble.Atanh(value);
         }
 
-        public static BigDouble Pow(this BigDouble value, BigDouble power)
+        public static FastBigDouble Pow(this FastBigDouble value, FastBigDouble power)
         {
-            return BigDouble.Pow(value, power);
+            return FastBigDouble.Pow(value, power);
         }
 
-        public static BigDouble Pow(this BigDouble value, long power)
+        public static FastBigDouble Pow(this FastBigDouble value, long power)
         {
-            return BigDouble.Pow(value, power);
+            return FastBigDouble.Pow(value, power);
         }
 
-        public static BigDouble Pow(this BigDouble value, double power)
+        public static FastBigDouble Pow(this FastBigDouble value, double power)
         {
-            return BigDouble.Pow(value, power);
+            return FastBigDouble.Pow(value, power);
         }
 
-        public static BigDouble Factorial(this BigDouble value)
+        public static FastBigDouble Factorial(this FastBigDouble value)
         {
-            return BigDouble.Factorial(value);
+            return FastBigDouble.Factorial(value);
         }
 
-        public static BigDouble Sqrt(this BigDouble value)
+        public static FastBigDouble Sqrt(this FastBigDouble value)
         {
-            return BigDouble.Sqrt(value);
+            return FastBigDouble.Sqrt(value);
         }
 
-        public static BigDouble Cbrt(this BigDouble value)
+        public static FastBigDouble Cbrt(this FastBigDouble value)
         {
-            return BigDouble.Cbrt(value);
+            return FastBigDouble.Cbrt(value);
         }
 
-        public static BigDouble Sqr(this BigDouble value)
+        public static FastBigDouble Sqr(this FastBigDouble value)
         {
-            return BigDouble.Pow(value, 2);
+            return FastBigDouble.Pow(value, 2);
         }
 
 #if EXTENSIONS_EASTER_EGGS

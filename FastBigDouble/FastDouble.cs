@@ -1,11 +1,10 @@
 using System; 
 
-namespace BreakInfinity
-{
-    
-    public static class OptimizedDoubleUtils
+namespace LD
+{ 
+    public static class FastDouble
     {
-        public static BigValueInfo GetBigValueInfo(string input)
+        public static FastBigValueInfo GetBigValueInfo(string input)
         { 
             double mantissa = 0;
             long exponent = 0;
@@ -81,7 +80,7 @@ namespace BreakInfinity
                 exponent = -exponent;
             }
 
-            return new BigValueInfo()
+            return new FastBigValueInfo()
             {
                 Exponent = exponent,
                 Mantissa = mantissa
